@@ -10,13 +10,14 @@ function MeshParam = getEleNodeRel(MeshParam, node, element)
 % -------------------------------------------------------------------------
 
 % Metrics of the mesh
-num_dof_node = 1;
+node_dof = 1;
 num_node_ele = size(element,2)-1;
 
-MeshParam.num_dof_node = num_dof_node;
+MeshParam.node_dof = node_dof;
 MeshParam.num_node_ele = num_node_ele;
 MeshParam.num_node = length(node);
-MeshParam.num_dof = num_dof_node*MeshParam.num_node;
+MeshParam.ele_dof = node_dof*num_node_ele;
+MeshParam.num_dof = node_dof*MeshParam.num_node;
 MeshParam.num_ele = length(element);
 
 % Determines the element size in x and y direction 
