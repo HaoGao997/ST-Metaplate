@@ -26,9 +26,15 @@ MeshParam.elesize = 0.01;
 
 % Load the mesh information (element/node numbering and coordinates)
 load('PlateMeshData.mat');
-MeshParam = getEleNodeRel(MeshParam, node, element);
+load('ElectrodeData.mat');
+MeshParam = getEleNodeRel(MeshParam, node, element, electrode, PlateParam.cellsize);
 
-% Loop on the element to assemble the global mass and stiffness matrices
+% Loop on the element assemble the mass and stiffness matrices
+% Initialize the global mass and stiffness matrices
+mass_mat_asb = zeros(MeshParam.num_dof);
+stiff_mat_asb = zeros(MeshParam.num_dof);
+couple_mat_asb = zeros(MeshParam.num_dof,PiezoParam.num_piezo);
+
 for i_ele = 1:MeshParam.num_ele
     
     % Calculate the material properties of the shim plate and piezo
@@ -41,11 +47,20 @@ for i_ele = 1:MeshParam.num_ele
     mass_area_shim = PlateParam.thickness*PlateParam.density;
     mass_area_piezo = PiezoParam.thickness*PiezoParam.density;
     
+    % Get the index of the associated piezoelectric patch
+    piezo_index = MeshParam.element(i_ele,8);
+    
     % Numerical integration of the mass and stiffness matrices for the element
     [stiff_mat_shim,stiff_mat_piezo,couple_mat] =...
         getStiffMatrixEle(MeshParam.ele_dof, MeshParam.element(i_ele,6:7), bend_mat_shim, bend_mat_piezo, couple_param_mat);
     
     mass_mat_shim = getMassMatrixEle(MeshParam.ele_dof, MeshParam.element(i_ele,6:7), mass_area_shim);
     mass_mat_piezo = getMassMatrixEle(MeshParam.ele_dof, MeshParam.element(i_ele,6:7), mass_area_piezo);
+    mass_mat = mass_mat_shim+mass_mat_piezo;
+    
+    [mass_mat_asb,stiff_mat_asb,couple_mat_asb] = assembMat(mass_mat_asb, stiff_mat_asb, couple_mat_asb, node_index, piezo_index,...
+        stiff_mat_shim, stiff_mat_piezo, couple_mat, mass_mat);
      
 end
+
+
