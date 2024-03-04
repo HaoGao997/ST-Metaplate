@@ -1,4 +1,4 @@
-function [shapefcn,shapefcn_ddr,shapefcn_dds,shapefcn_drds] = getShapeFcns(r, s)
+ function [shapefcn,shapefcn_ddr,shapefcn_dds,shapefcn_drds] = getShapeFcns(r, s)
 % getShapeFcns evaluates the shape functions and their derivatives at given
 % local natural coordinates defined in the isoparametric element.
 %

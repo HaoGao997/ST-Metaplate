@@ -23,7 +23,7 @@ gauss_weight_y = [1, 1];
 % Initialize the element stiffness matrix and the coupling matrix
 stiff_shim_ele_mat = zeros(ele_dof);
 stiff_piezo_ele_mat = zeros(ele_dof);
-couple_ele_mat = zeros();
+couple_ele_mat = zeros(ele_dof,1);
 
 for intx = 1:length(gauss_pts_x)
     for inty = 1:length(gauss_pts_y)
