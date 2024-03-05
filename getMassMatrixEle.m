@@ -32,7 +32,7 @@ for intx = 1:length(gauss_pts_x)
         [N, ~, ~, ~] = getShapeFcns(r_coor, s_coor);
                 
         % Get the coordinate transformation matrix
-        [~, det_jacob] = getCoorTransMatrix(ele_size(1),elesize_y(2));
+        [~, det_jacob] = getCoorTransMatrix(ele_size(1),ele_size(2));
         
         % Sum the Gaussian quadratures
         mass_ele_mat = mass_ele_mat+weight_r*weight_s*det_jacob*mass_area*transpose(N)*N;

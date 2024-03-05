@@ -2,7 +2,7 @@ function MeshParam = getEleNodeRel(MeshParam, node, element, electrode, cellsize
 % getEleNodeRel defines the geometrical relations between the elements
 % and the nodes.
 % In this particular problem, we use identical rectangular quadrilaterial
-% elements with 4 nodes and 12 DOF.
+% elements with 4 nodes and 4 DOF.
 %
 % Created by Hao Gao (SJTU)
 % Create on Feb 10, 2024
@@ -28,8 +28,8 @@ ele_size = zeros(MeshParam.num_ele,2);
 piezo_index = zeros(MeshParam.num_ele,1);
 for i_ele = 1:MeshParam.num_ele
     
-   pos_node_1 = 0.01*node(element(i_ele,2),2:3); % Careful for the unit!!
-   pos_node_4 = 0.01*node(element(i_ele,4),2:3);
+   pos_node_1 = node(element(i_ele,2),2:3); % Careful for the unit!!
+   pos_node_4 = node(element(i_ele,4),2:3);
    ele_size(i_ele,:) = abs(pos_node_4-pos_node_1);
    
    center_pos = (pos_node_1+pos_node_4)/2;
@@ -46,7 +46,7 @@ for i_ele = 1:MeshParam.num_ele
 end
 
 % Assign the node and element geometry information
-node(:,2:3) = node(:,2:3)*1e-2;
+node(:,2:3) = node(:,2:3);
 MeshParam.node = node;
 MeshParam.element = [element,ele_size,piezo_index];
 

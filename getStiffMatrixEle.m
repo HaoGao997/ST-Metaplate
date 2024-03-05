@@ -42,7 +42,7 @@ for intx = 1:length(gauss_pts_x)
         shapefcn_mat = [ddNddr; ddNdds; 2*ddNdrds];
         
         % Get the coordinate transformation matrix
-        [trans_mat, det_jacob] = getCoorTransMatrix(ele_size(1),elesize_y(2));
+        [trans_mat, det_jacob] = getCoorTransMatrix(ele_size(1),ele_size(2));
         
         % Sum the Gaussian quadratures
         stiff_shim_ele_mat = stiff_shim_ele_mat+weight_r*weight_s*det_jacob*...
