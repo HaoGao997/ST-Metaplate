@@ -15,10 +15,17 @@ function [stiff_shim_ele_mat,stiff_piezo_ele_mat,couple_ele_mat] = getStiffMatri
 
 % Define the Gaussian points and weights
 % Here two Gaussian points are considered
-gauss_pts_x = [-1/sqrt(3),1/sqrt(3)];
-gauss_weight_x = [1, 1];
-gauss_pts_y = [-1/sqrt(3),1/sqrt(3)];
-gauss_weight_y = [1, 1];
+% gauss_pts_x = [-1/sqrt(3),1/sqrt(3)];
+% gauss_weight_x = [1, 1];
+% gauss_pts_y = [-1/sqrt(3),1/sqrt(3)];
+% gauss_weight_y = [1, 1];
+
+gauss_pts_x = [0, -sqrt(5-2*sqrt(10/7))/3, sqrt(5-2*sqrt(10/7))/3, -sqrt(5+2*sqrt(10/7))/3, sqrt(5+2*sqrt(10/7))/3];
+gauss_weight_x = [128/225, (322+13*sqrt(70))/900, (322+13*sqrt(70))/900, (322-13*sqrt(70))/900, (322-13*sqrt(70))/900];
+
+gauss_pts_y = [0, -sqrt(5-2*sqrt(10/7))/3, sqrt(5-2*sqrt(10/7))/3, -sqrt(5+2*sqrt(10/7))/3, sqrt(5+2*sqrt(10/7))/3];
+gauss_weight_y = [128/225, (322+13*sqrt(70))/900, (322+13*sqrt(70))/900, (322-13*sqrt(70))/900, (322-13*sqrt(70))/900];
+
 
 % Initialize the element stiffness matrix and the coupling matrix
 stiff_shim_ele_mat = zeros(ele_dof);

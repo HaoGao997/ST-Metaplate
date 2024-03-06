@@ -11,8 +11,8 @@ function [trans_mat,det_jacob] = getCoorTransMatrix(elesize_x, elesize_y)
 
 trans_mat = [(2/elesize_x)^2, 0, 0;
     0, (2/elesize_y)^2, 0;
-    0, 0, (2/elesize_x)*(2/elesize_y)/2];
+    0, 0, (2/elesize_x)*(2/elesize_y)];
 
-det_jacob = (2/elesize_x)*(2/elesize_y);
+det_jacob = (elesize_x/2)*(elesize_y/2);
 
 end

@@ -21,7 +21,7 @@ PlateParam.length_plate = PlateParam.cellsize*num_cell_edge;
 PlateParam.elas_mat = PlateParam.modulus/(1-PlateParam.poisson^2)*...
     [1, PlateParam.poisson, 0;
      PlateParam.poisson, 1, 0;
-     0, 0, (1+PlateParam.poisson)/2];
+     0, 0, (1-PlateParam.poisson)/2];
 
 % Input the parameters of the piezoelectric layer
 PiezoParam.density = 7500;       % Density [kg/m^3]
@@ -36,7 +36,7 @@ PiezoParam.capacit_patch = 2*PiezoParam.permitv/PiezoParam.thickness;
 PiezoParam.elas_mat = PiezoParam.modulus/(1-PiezoParam.poisson^2)*...
     [1, PiezoParam.poisson, 0;
      PiezoParam.poisson, 1, 0;
-     0, 0, (1+PiezoParam.poisson)/2];
+     0, 0, (1-PiezoParam.poisson)/2];
 PiezoParam.phase_vec = zeros(1,PiezoParam.num_patch);  % TBD!!!!
 % Define the modulation shunte circuit
 PiezoParam.fre_mod = 10;        % Modulation frequency [rad/s]
@@ -88,7 +88,7 @@ for i_ele = 1:MeshParam.num_ele
      
 end
 
-% Constraint the excited node
+%% Constraint the excited node
 ex_node_index = 10; %(TBD!!!)
 stiff_vec_ex = stiff_mat_asb(:,ex_node_index);
 stiff_vec_ex(ex_node_index) = [];
@@ -102,7 +102,7 @@ couple_mat_asb(ex_node_index,:) = [];
 %% Time domain march scheme (4th order Runge Kutta)
 time_step = 1e-5;
 time_sta = 0;
-time_end = 1;
+time_end = 0.05;
 num_time_pts = round((time_end-time_sta)/time_step)+1;
 time_pts = linspace(time_sta,time_end,num_time_pts);
 
@@ -132,7 +132,7 @@ for i_time = 1:num_time_pts
     inv_electr_mat_inst = capacit_mat_inst\eye(size(capacit_mat_inst));
 
     % Define the constraint force as external load
-    force_vec = [zeros(num_dof_mech,1);inv_mass_mat_asb*stiff_vec_ex*sin(fre_ex*t_inst);zeros(num_dof_electr,1)];
+    force_vec = [zeros(num_dof_mech,1);stiff_vec_ex*sin(fre_ex*t_inst);zeros(num_dof_electr,1)];
 
     % Find the slope at the given time
     k_1 = calRK4Slope(state_coord_inst, inv_mass_mat_asb, stiff_mat_asb, couple_mat_asb, inv_electr_mat_inst, force_vec);
@@ -148,7 +148,7 @@ for i_time = 1:num_time_pts
     inv_electr_mat_inst = capacit_mat_inst\eye(size(capacit_mat_inst));
 
     % Define the constraint force as external load
-    force_vec = [zeros(num_dof_mech,1);inv_mass_mat_asb*stiff_vec_ex*sin(fre_ex*t_inst);zeros(num_dof_electr,1)];
+    force_vec = [zeros(num_dof_mech,1);stiff_vec_ex*sin(fre_ex*t_inst);zeros(num_dof_electr,1)];
 
     % Find the slope at the given time
     k_2 = calRK4Slope(state_coord_inst, inv_mass_mat_asb, stiff_mat_asb, couple_mat_asb, inv_electr_mat_inst, force_vec);
@@ -164,7 +164,7 @@ for i_time = 1:num_time_pts
     inv_electr_mat_inst = capacit_mat_inst\eye(size(capacit_mat_inst));
 
     % Define the constraint force as external load
-    force_vec = [zeros(num_dof_mech,1);inv_mass_mat_asb*stiff_vec_ex*sin(fre_ex*t_inst);zeros(num_dof_electr,1)];
+    force_vec = [zeros(num_dof_mech,1);stiff_vec_ex*sin(fre_ex*t_inst);zeros(num_dof_electr,1)];
 
     % Find the slope at the given time
     k_3 = calRK4Slope(state_coord_inst, inv_mass_mat_asb, stiff_mat_asb, couple_mat_asb, inv_electr_mat_inst, force_vec);
@@ -180,7 +180,7 @@ for i_time = 1:num_time_pts
     inv_electr_mat_inst = capacit_mat_inst\eye(size(capacit_mat_inst));
 
     % Define the constraint force as external load
-    force_vec = [zeros(num_dof_mech,1);inv_mass_mat_asb*stiff_vec_ex*sin(fre_ex*t_inst);zeros(num_dof_electr,1)];
+    force_vec = [zeros(num_dof_mech,1);stiff_vec_ex*sin(fre_ex*t_inst);zeros(num_dof_electr,1)];
 
     % Find the slope at the given time
     k_4 = calRK4Slope(state_coord_inst, inv_mass_mat_asb, stiff_mat_asb, couple_mat_asb, inv_electr_mat_inst, force_vec);
@@ -190,7 +190,8 @@ for i_time = 1:num_time_pts
 
 end
 
-
+%% Post-process
+plot(time_pts(1:2), state_coord(1:num_dof_mech,1:2));
 
 
 

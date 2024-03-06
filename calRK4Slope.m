@@ -19,6 +19,6 @@ state_mat = [zeros(num_dof_mech), eye(num_dof_mech), zeros(num_dof_mech,num_dof_
              -inv_mass_mat_asb*stiff_mat_asb, zeros(num_dof_mech), inv_mass_mat_asb*couple_mat_asb;
              zeros(num_dof_electr,num_dof_mech), -inv_electr_mat_inst*transpose(couple_mat_asb), zeros(num_dof_electr)];
 
-slope = state_mat*state_coord_inst+force_vec;
+slope = state_mat*state_coord_inst+inv_mass_mat_asb*force_vec;
 
 end
