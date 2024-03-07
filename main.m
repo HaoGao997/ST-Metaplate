@@ -43,7 +43,7 @@ PiezoParam.fre_mod = 10;        % Modulation frequency [rad/s]
 PiezoParam.capacit_shunt = 0;   % Modulation capacitance [F]
 
 % Define the mesh size (regular square element)
-MeshParam.elesize = 0.001;
+MeshParam.elesize = 0.01;
 
 % Load the mesh information (element/node numbering and coordinates)
 load('PlateMeshData.mat');
@@ -61,12 +61,12 @@ for i_ele = 1:MeshParam.num_ele
     % Calculate the material properties of the shim plate and piezo
     % layers
     bend_mat_shim = PlateParam.thickness^3/12*PlateParam.elas_mat;
-    bend_mat_piezo = (4*PiezoParam.thickness^2+...
+    bend_mat_piezo = 0*2*(4*PiezoParam.thickness^2+...
         6*PlateParam.thickness*PiezoParam.thickness+...
-        3*PlateParam.thickness^2)/12*PiezoParam.elas_mat;
+        3*PlateParam.thickness^2)*PiezoParam.thickness/12*PiezoParam.elas_mat; % set zero tentatively!
     
     mass_area_shim = PlateParam.thickness*PlateParam.density;
-    mass_area_piezo = PiezoParam.thickness*PiezoParam.density;
+    mass_area_piezo = 0*2*PiezoParam.thickness*PiezoParam.density; % set zero tentatively!
 
     couple_param_mat = [PiezoParam.piezo_strain;PiezoParam.piezo_strain;0];
     
@@ -77,10 +77,10 @@ for i_ele = 1:MeshParam.num_ele
     
     % Numerical integration of the mass and stiffness matrices for the element
     [stiff_mat_shim,stiff_mat_piezo,couple_mat] =...
-        getStiffMatrixEle(MeshParam.ele_dof, MeshParam.element(i_ele,6:7), bend_mat_shim, bend_mat_piezo, couple_param_mat);
+        getStiffMatrixEle(MeshParam.ele_dof, MeshParam.element(i_ele,6:7), bend_mat_shim, bend_mat_piezo, couple_param_mat, node_index, MeshParam.node);
     
-    mass_mat_shim = getMassMatrixEle(MeshParam.ele_dof, MeshParam.element(i_ele,6:7), mass_area_shim);
-    mass_mat_piezo = getMassMatrixEle(MeshParam.ele_dof, MeshParam.element(i_ele,6:7), mass_area_piezo);
+    mass_mat_shim = getMassMatrixEle(MeshParam.ele_dof, MeshParam.element(i_ele,6:7), mass_area_shim, node_index, MeshParam.node);
+    mass_mat_piezo = getMassMatrixEle(MeshParam.ele_dof, MeshParam.element(i_ele,6:7), mass_area_piezo, node_index, MeshParam.node);
     mass_mat = mass_mat_shim+mass_mat_piezo;
     
     [mass_mat_asb,stiff_mat_asb,couple_mat_asb] = assembMat(mass_mat_asb, stiff_mat_asb, couple_mat_asb, node_index, piezo_index,...
@@ -100,9 +100,9 @@ stiff_mat_asb(:,ex_node_index) =[];
 couple_mat_asb(ex_node_index,:) = [];
 
 %% Time domain march scheme (4th order Runge Kutta)
-time_step = 1e-5;
+time_step = 1e-9;
 time_sta = 0;
-time_end = 0.05;
+time_end = 0.000001;
 num_time_pts = round((time_end-time_sta)/time_step)+1;
 time_pts = linspace(time_sta,time_end,num_time_pts);
 
@@ -132,7 +132,7 @@ for i_time = 1:num_time_pts
     inv_electr_mat_inst = capacit_mat_inst\eye(size(capacit_mat_inst));
 
     % Define the constraint force as external load
-    force_vec = [zeros(num_dof_mech,1);stiff_vec_ex*sin(fre_ex*t_inst);zeros(num_dof_electr,1)];
+    force_vec = stiff_vec_ex*sin(fre_ex*t_inst);
 
     % Find the slope at the given time
     k_1 = calRK4Slope(state_coord_inst, inv_mass_mat_asb, stiff_mat_asb, couple_mat_asb, inv_electr_mat_inst, force_vec);
@@ -148,7 +148,7 @@ for i_time = 1:num_time_pts
     inv_electr_mat_inst = capacit_mat_inst\eye(size(capacit_mat_inst));
 
     % Define the constraint force as external load
-    force_vec = [zeros(num_dof_mech,1);stiff_vec_ex*sin(fre_ex*t_inst);zeros(num_dof_electr,1)];
+    force_vec = stiff_vec_ex*sin(fre_ex*t_inst);
 
     % Find the slope at the given time
     k_2 = calRK4Slope(state_coord_inst, inv_mass_mat_asb, stiff_mat_asb, couple_mat_asb, inv_electr_mat_inst, force_vec);
@@ -164,7 +164,7 @@ for i_time = 1:num_time_pts
     inv_electr_mat_inst = capacit_mat_inst\eye(size(capacit_mat_inst));
 
     % Define the constraint force as external load
-    force_vec = [zeros(num_dof_mech,1);stiff_vec_ex*sin(fre_ex*t_inst);zeros(num_dof_electr,1)];
+    force_vec = stiff_vec_ex*sin(fre_ex*t_inst);
 
     % Find the slope at the given time
     k_3 = calRK4Slope(state_coord_inst, inv_mass_mat_asb, stiff_mat_asb, couple_mat_asb, inv_electr_mat_inst, force_vec);
@@ -180,7 +180,7 @@ for i_time = 1:num_time_pts
     inv_electr_mat_inst = capacit_mat_inst\eye(size(capacit_mat_inst));
 
     % Define the constraint force as external load
-    force_vec = [zeros(num_dof_mech,1);stiff_vec_ex*sin(fre_ex*t_inst);zeros(num_dof_electr,1)];
+    force_vec = stiff_vec_ex*sin(fre_ex*t_inst);
 
     % Find the slope at the given time
     k_4 = calRK4Slope(state_coord_inst, inv_mass_mat_asb, stiff_mat_asb, couple_mat_asb, inv_electr_mat_inst, force_vec);
@@ -191,7 +191,7 @@ for i_time = 1:num_time_pts
 end
 
 %% Post-process
-plot(time_pts(1:2), state_coord(1:num_dof_mech,1:2));
+plot(time_pts(1:10), state_coord(1:num_dof_mech,1:10));
 
 
 

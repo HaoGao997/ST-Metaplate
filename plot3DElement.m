@@ -1,5 +1,10 @@
 %% This part is a script to draw the discrete patches of elements
+[V,D] = eigs(stiff_mat_asb, mass_mat_asb, 10, 0.01);
+
+%%
 figure; hold all;
+
+id = 2;
 
 for i_ele = 1:MeshParam.num_ele
     
@@ -17,17 +22,18 @@ for i_ele = 1:MeshParam.num_ele
               MeshParam.node(node_index(3),3);
               MeshParam.node(node_index(4),3)];
     
-    z_coord = V(node_index,1);
+    z_coord = V(node_index,id);
           
     patch(x_coord,y_coord,z_coord,[0.5;0.5;0.5;0.5]);
     
 end
 
-view([45,45]);
+title(['Frequency = ',num2str(sqrt(D(id,id))/2/pi),' Hz']);
+view([-135,45]);
 
 
 %% This part is a hacky script to verify the element stiffness and mass matrix
-n_int_pts = 1001;
+n_int_pts = 2001;
 a = MeshParam.elesize;
 int_x = linspace(-a/2,a/2,n_int_pts);
 int_y = linspace(-a/2,a/2,n_int_pts);
@@ -64,12 +70,13 @@ for i_x = 1:n_int_pts
                2*shapeFcn(x, a, 1, 1)*shapeFcn(y, a, 2, 1),...
                2*shapeFcn(x, a, 2, 1)*shapeFcn(y, a, 2, 1)];
         
-%         M_mat = [shapeFcn(x, a, 1, 0)*shapeFcn(y, a, 1, 0),...
-%                  shapeFcn(x, a, 2, 0)*shapeFcn(y, a, 1, 0),...
-%                  shapeFcn(x, a, 1, 0)*shapeFcn(y, a, 2, 0),...
-%                  shapeFcn(x, a, 2, 0)*shapeFcn(y, a, 2, 0)];
+        M_mat = [shapeFcn(x, a, 1, 0)*shapeFcn(y, a, 1, 0),...
+                 shapeFcn(x, a, 2, 0)*shapeFcn(y, a, 1, 0),...
+                 shapeFcn(x, a, 1, 0)*shapeFcn(y, a, 2, 0),...
+                 shapeFcn(x, a, 2, 0)*shapeFcn(y, a, 2, 0)];
         
         integral = integral+weight_x*weight_y*transpose(K_mat)*bend_mat_shim*K_mat*dx*dy;
+%         integral = integral+weight_x*weight_y*mass_area_piezo*transpose(M_mat)*M_mat*dx*dy;
         
     end
 end

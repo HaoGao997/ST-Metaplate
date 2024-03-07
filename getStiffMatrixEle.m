@@ -1,4 +1,4 @@
-function [stiff_shim_ele_mat,stiff_piezo_ele_mat,couple_ele_mat] = getStiffMatrixEle(ele_dof, ele_size, bend_shim_mat, bend_piezo_mat, couple_mat)
+function [stiff_shim_ele_mat,stiff_piezo_ele_mat,couple_ele_mat] = getStiffMatrixEle(ele_dof, ele_size, bend_shim_mat, bend_piezo_mat, couple_mat, node_index, node_coord)
 % getInertiMatrixEle determines the stiffness matrix of a given element.
 %
 % <bend_shim_mat> is a 3x3 matrix that describes the bending stiffness of the
@@ -49,7 +49,7 @@ for intx = 1:length(gauss_pts_x)
         shapefcn_mat = [ddNddr; ddNdds; 2*ddNdrds];
         
         % Get the coordinate transformation matrix
-        [trans_mat, det_jacob] = getCoorTransMatrix(ele_size(1),ele_size(2));
+        [trans_mat, det_jacob] = getCoorTransMatrix(node_index, node_coord, r_coor, s_coor);
         
         % Sum the Gaussian quadratures
         stiff_shim_ele_mat = stiff_shim_ele_mat+weight_r*weight_s*det_jacob*...

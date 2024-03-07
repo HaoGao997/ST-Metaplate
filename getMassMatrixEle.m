@@ -1,4 +1,4 @@
-function mass_ele_mat = getMassMatrixEle(ele_dof, ele_size, mass_area)
+function mass_ele_mat = getMassMatrixEle(ele_dof, ele_size, mass_area, node_index, node_coord)
 % getInertiMatrixEle determines the mass matrix of a given element.
 %
 %
@@ -9,11 +9,11 @@ function mass_ele_mat = getMassMatrixEle(ele_dof, ele_size, mass_area)
 
 % Define the Gaussian points and weights
 % Here two Gaussian points are considered
-gauss_pts_x = [-sqrt(3/7-2/7*sqrt(6/5)),sqrt(3/7-2/7*sqrt(6/5)),-sqrt(3/7+2/7*sqrt(6/5)),sqrt(3/7+2/7*sqrt(6/5))];
-gauss_weight_x = [(18+sqrt(30))/36, (18+sqrt(30))/36, (18-sqrt(30))/36, (18-sqrt(30))/36];
+gauss_pts_x = [0, -sqrt(5-2*sqrt(10/7))/3, sqrt(5-2*sqrt(10/7))/3, -sqrt(5+2*sqrt(10/7))/3, sqrt(5+2*sqrt(10/7))/3];
+gauss_weight_x = [128/225, (322+13*sqrt(70))/900, (322+13*sqrt(70))/900, (322-13*sqrt(70))/900, (322-13*sqrt(70))/900];
 
-gauss_pts_y = [-sqrt(3/7-2/7*sqrt(6/5)),sqrt(3/7-2/7*sqrt(6/5)),-sqrt(3/7+2/7*sqrt(6/5)),sqrt(3/7+2/7*sqrt(6/5))];
-gauss_weight_y = [(18+sqrt(30))/36, (18+sqrt(30))/36, (18-sqrt(30))/36, (18-sqrt(30))/36];
+gauss_pts_y = [0, -sqrt(5-2*sqrt(10/7))/3, sqrt(5-2*sqrt(10/7))/3, -sqrt(5+2*sqrt(10/7))/3, sqrt(5+2*sqrt(10/7))/3];
+gauss_weight_y = [128/225, (322+13*sqrt(70))/900, (322+13*sqrt(70))/900, (322-13*sqrt(70))/900, (322-13*sqrt(70))/900];
 
 % Initialize the element stiffness matrix
 mass_ele_mat = zeros(ele_dof);
@@ -32,7 +32,7 @@ for intx = 1:length(gauss_pts_x)
         [N, ~, ~, ~] = getShapeFcns(r_coor, s_coor);
                 
         % Get the coordinate transformation matrix
-        [~, det_jacob] = getCoorTransMatrix(ele_size(1),ele_size(2));
+        [~, det_jacob] = getCoorTransMatrix(node_index, node_coord, r_coor, s_coor);
         
         % Sum the Gaussian quadratures
         mass_ele_mat = mass_ele_mat+weight_r*weight_s*det_jacob*mass_area*transpose(N)*N;
