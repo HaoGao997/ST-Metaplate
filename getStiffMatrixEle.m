@@ -1,4 +1,4 @@
-function [stiff_shim_ele_mat,stiff_piezo_ele_mat,couple_ele_mat] = getStiffMatrixEle(ele_dof, ele_size, bend_shim_mat, bend_piezo_mat, couple_mat, node_index, node_coord)
+function [stiff_shim_ele_mat,stiff_piezo_ele_mat,couple_ele_mat] = getStiffMatrixEle(ele_dof, node_dof, ele_size, bend_shim_mat, bend_piezo_mat, couple_mat, node_index, node_coord)
 % getInertiMatrixEle determines the stiffness matrix of a given element.
 %
 % <bend_shim_mat> is a 3x3 matrix that describes the bending stiffness of the
@@ -43,7 +43,12 @@ for intx = 1:length(gauss_pts_x)
         
         % Get the shape functions and their derivatives at the given
         % Gaussian point
-        [~, ddNddr, ddNdds, ddNdrds] = getShapeFcns(r_coor, s_coor);
+        switch node_dof
+            case 1
+                [~, ddNddr, ddNdds, ddNdrds] = getShapeFcns(r_coor, s_coor);
+            case 3
+                [~, ddNddr, ddNdds, ddNdrds] = getShapeFcns12DOF(r_coor, s_coor, ele_size);
+        end
         
         % Define the shape function matrix
         shapefcn_mat = [ddNddr; ddNdds; 2*ddNdrds];

@@ -1,4 +1,4 @@
-function mass_ele_mat = getMassMatrixEle(ele_dof, ele_size, mass_area, node_index, node_coord)
+function mass_ele_mat = getMassMatrixEle(ele_dof, node_dof, ele_size, mass_area, node_index, node_coord)
 % getInertiMatrixEle determines the mass matrix of a given element.
 %
 %
@@ -29,7 +29,12 @@ for intx = 1:length(gauss_pts_x)
         
         % Get the shape functions and their derivatives at the given
         % Gaussian point
-        [N, ~, ~, ~] = getShapeFcns(r_coor, s_coor);
+        switch node_dof
+            case 1
+                [N, ~, ~, ~] = getShapeFcns(r_coor, s_coor);
+            case 3
+                [N, ~, ~, ~] = getShapeFcns12DOF(r_coor, s_coor, ele_size);
+        end
                 
         % Get the coordinate transformation matrix
         [~, det_jacob] = getCoorTransMatrix(node_index, node_coord, r_coor, s_coor);

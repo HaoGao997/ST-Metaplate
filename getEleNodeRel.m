@@ -1,4 +1,4 @@
-function MeshParam = getEleNodeRel(MeshParam, node, element, electrode, cellsize)
+function MeshParam = getEleNodeRel(MeshParam, node, element, electrode, cellsize, opt_dof)
 % getEleNodeRel defines the geometrical relations between the elements
 % and the nodes.
 % In this particular problem, we use identical rectangular quadrilaterial
@@ -6,11 +6,16 @@ function MeshParam = getEleNodeRel(MeshParam, node, element, electrode, cellsize
 %
 % Created by Hao Gao (SJTU)
 % Create on Feb 10, 2024
-% Modified on Feb 28, 2024
+% Modified on Mar 13, 2024
 % -------------------------------------------------------------------------
 
 % Metrics of the mesh
-node_dof = 1;
+switch opt_dof
+    case 1
+        node_dof = 1;
+    case 2
+        node_dof = 3;
+end
 num_node_ele = size(element,2)-1;
 num_electrode = size(electrode,1);
 

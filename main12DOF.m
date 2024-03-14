@@ -1,10 +1,12 @@
 % Transient wave propagation analysis of a spatiotemporally modulated
 % piezoelectric shunt meta-plate.
+% 
+% The 4 node 12 dof quadrilaterial element is used in the formulation.
 %
 % -------------------------------------------------------------------------
 % Created by Hao Gao (SJTU)
-% Create on Feb 10, 2024
-% Modified on Mar 05, 2024
+% Create on Mar 13, 2024
+% Modified on Mar 13, 2024
 % -------------------------------------------------------------------------
 clear; clc;
 
@@ -48,7 +50,7 @@ MeshParam.elesize = 0.01;
 % Load the mesh information (element/node numbering and coordinates)
 load('PlateMeshData.mat');
 load('ElectrodeData.mat');
-MeshParam = getEleNodeRel(MeshParam, node, element, electrode, PlateParam.cellsize, 1);
+MeshParam = getEleNodeRel(MeshParam, node, element, electrode, PlateParam.cellsize, 2);
 
 %% Loop on the element assemble the mass and stiffness matrices
 % Initialize the global mass and stiffness matrices
@@ -77,13 +79,13 @@ for i_ele = 1:MeshParam.num_ele
     
     % Numerical integration of the mass and stiffness matrices for the element
     [stiff_mat_shim,stiff_mat_piezo,couple_mat] =...
-        getStiffMatrixEle(MeshParam.ele_dof, MeshParam.element(i_ele,6:7), bend_mat_shim, bend_mat_piezo, couple_param_mat, node_index, MeshParam.node);
+        getStiffMatrixEle(MeshParam.ele_dof, MeshParam.node_dof, MeshParam.elesize, bend_mat_shim, bend_mat_piezo, couple_param_mat, node_index, MeshParam.node);
     
-    mass_mat_shim = getMassMatrixEle(MeshParam.ele_dof, MeshParam.element(i_ele,6:7), mass_area_shim, node_index, MeshParam.node);
-    mass_mat_piezo = getMassMatrixEle(MeshParam.ele_dof, MeshParam.element(i_ele,6:7), mass_area_piezo, node_index, MeshParam.node);
+    mass_mat_shim = getMassMatrixEle(MeshParam.ele_dof, MeshParam.node_dof,  MeshParam.elesize, mass_area_shim, node_index, MeshParam.node);
+    mass_mat_piezo = getMassMatrixEle(MeshParam.ele_dof, MeshParam.node_dof,  MeshParam.elesize, mass_area_piezo, node_index, MeshParam.node);
     mass_mat = mass_mat_shim+mass_mat_piezo;
     
-    [mass_mat_asb,stiff_mat_asb,couple_mat_asb] = assembMat(mass_mat_asb, stiff_mat_asb, couple_mat_asb, node_index, piezo_index,...
+    [mass_mat_asb,stiff_mat_asb,couple_mat_asb] = assembMat12DOF(mass_mat_asb, stiff_mat_asb, couple_mat_asb, node_index, piezo_index,...
         stiff_mat_shim, stiff_mat_piezo, couple_mat, mass_mat);
      
 end
