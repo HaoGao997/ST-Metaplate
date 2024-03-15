@@ -42,7 +42,7 @@ PiezoParam.elas_mat = PiezoParam.modulus/(1-PiezoParam.poisson^2)*...
 PiezoParam.phase_vec = zeros(1,PiezoParam.num_patch);  % TBD!!!!
 % Define the modulation shunte circuit
 PiezoParam.fre_mod = 10;        % Modulation frequency [rad/s]
-PiezoParam.capacit_shunt = 0;   % Modulation capacitance [F]
+PiezoParam.capacit_shunt = 5e-5;   % Modulation capacitance [F]
 
 % Define the mesh size (regular square element)
 MeshParam.elesize = 0.01;
@@ -63,12 +63,12 @@ for i_ele = 1:MeshParam.num_ele
     % Calculate the material properties of the shim plate and piezo
     % layers
     bend_mat_shim = PlateParam.thickness^3/12*PlateParam.elas_mat;
-    bend_mat_piezo = 0*2*(4*PiezoParam.thickness^2+...
+    bend_mat_piezo = 2*(4*PiezoParam.thickness^2+...
         6*PlateParam.thickness*PiezoParam.thickness+...
         3*PlateParam.thickness^2)*PiezoParam.thickness/12*PiezoParam.elas_mat; % set zero tentatively!
     
     mass_area_shim = PlateParam.thickness*PlateParam.density;
-    mass_area_piezo = 0*2*PiezoParam.thickness*PiezoParam.density; % set zero tentatively!
+    mass_area_piezo = 2*PiezoParam.thickness*PiezoParam.density; % set zero tentatively!
 
     couple_param_mat = [PiezoParam.piezo_strain;PiezoParam.piezo_strain;0];
     
@@ -91,7 +91,7 @@ for i_ele = 1:MeshParam.num_ele
 end
 
 %% Constraint the excited node
-ex_node_index = 10; %(TBD!!!)
+ex_node_index = 136; %(TBD!!!)
 stiff_vec_ex = stiff_mat_asb(:,ex_node_index);
 stiff_vec_ex(ex_node_index) = [];
 % Removed the excitaed node from mass and stiffness matrices
@@ -102,9 +102,9 @@ stiff_mat_asb(:,ex_node_index) =[];
 couple_mat_asb(ex_node_index,:) = [];
 
 %% Time domain march scheme (4th order Runge Kutta)
-time_step = 1e-9;
+time_step = 1e-7;
 time_sta = 0;
-time_end = 0.000001;
+time_end = 0.001;
 num_time_pts = round((time_end-time_sta)/time_step)+1;
 time_pts = linspace(time_sta,time_end,num_time_pts);
 
@@ -121,7 +121,7 @@ state_coord = zeros(num_states, num_time_pts);
 % Calculates the inverse matrix of the mass matrix
 inv_mass_mat_asb = mass_mat_asb\eye(size(mass_mat_asb));
 
-for i_time = 1:num_time_pts
+for i_time = 1:num_time_pts-1
 
     % Determine the slope k1 at the current time
     t_inst = time_pts(i_time);
@@ -193,7 +193,7 @@ for i_time = 1:num_time_pts
 end
 
 %% Post-process
-plot(time_pts(1:10), state_coord(1:num_dof_mech,1:10));
+plot(time_pts(1:end), state_coord(1:num_dof_mech,1:end));
 
 
 
