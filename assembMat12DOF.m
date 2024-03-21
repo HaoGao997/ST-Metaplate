@@ -1,5 +1,5 @@
 function [mass_mat_asb,stiff_mat_asb,couple_mat_asb] = assembMat12DOF(mass_mat_asb, stiff_mat_asb, couple_mat_asb, node_index, piezo_index,...
-    stiff_mat_shim, stiff_mat_piezo, couple_mat, mass_mat)
+    stiff_mat_shim, stiff_mat_piezo, couple_mat, mass_mat, num_dof)
 % assembMat assembles the mass and stiffness matrices following the order
 % of the nodes.
 %
@@ -8,16 +8,16 @@ function [mass_mat_asb,stiff_mat_asb,couple_mat_asb] = assembMat12DOF(mass_mat_a
 % Create on Mar 13, 2024
 % Modified on Mar 13, 2024
 % -------------------------------------------------------------------------
-num_ele = size(mass_mat_asb,1)/3;
+num_ele = num_dof/3;
 num_node_ele = length(node_index);
-num_dof = num_node_ele*3;
+num_dof_ele = num_node_ele*3;
 
-for i_dof = 1:num_dof
+for i_dof = 1:num_dof_ele
     i_node = floor((i_dof-0.1)/3)+1; % Find the local node number (1-4)
     i_dof_node = i_dof-3*(i_node-1); % Find the DOF order of this node (1:w,2:theta_x,3:theta_y)
     i_node_glb = node_index(i_node); % Find the global node number 
     
-    for j_dof = 1:num_dof
+    for j_dof = 1:num_dof_ele
         j_node = floor((j_dof-0.1)/3)+1; % Find the local node number (1-4)
         j_dof_node = j_dof-3*(j_node-1); % Find the DOF order of this node (1:w,2:theta_x,3:theta_y)
         j_node_glb = node_index(j_node); % Find the global node number

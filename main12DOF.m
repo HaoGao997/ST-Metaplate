@@ -10,13 +10,17 @@
 % -------------------------------------------------------------------------
 clear; clc;
 
+% Load the mesh information (element/node numbering and coordinates)
+load('PlateMeshData_20_4.mat');
+load('ElectrodeData_20_4.mat');
+
 % Input the parameters of the shim plate
 PlateParam.density = 2700;       % Density [kg/m^3]
 PlateParam.modulus = 69e9;       % Elastic modulus [Pa]
 PlateParam.poisson = 0.33;       % Poisson's ratio
 PlateParam.thickness = 0.002;    % Thickness [m]
 PlateParam.cellsize = 0.05;      % Size [m]
-num_cell_edge = 3;
+num_cell_edge = sqrt(electrode(end,1));
 PlateParam.num_cell = num_cell_edge^2;  % Total number of cells
 PlateParam.length_plate = PlateParam.cellsize*num_cell_edge;
 % Define the elasticity matrix of the shim plate
@@ -44,19 +48,17 @@ PiezoParam.phase_vec = zeros(1,PiezoParam.num_patch);  % TBD!!!!
 PiezoParam.fre_mod = 10;        % Modulation frequency [rad/s]
 PiezoParam.capacit_shunt = 5e-5;   % Modulation capacitance [F]
 
-% Define the mesh size (regular square element)
-MeshParam.elesize = 0.01;
-
-% Load the mesh information (element/node numbering and coordinates)
-load('PlateMeshData.mat');
-load('ElectrodeData.mat');
-MeshParam = getEleNodeRel(MeshParam, node, element, electrode, PlateParam.cellsize, 2);
+% Define the mesh parameters
+MeshParam = getEleNodeRel(node, element, electrode, PlateParam.cellsize, 2);
+MeshParam.elesize = MeshParam.element(1,6);
 
 %% Loop on the element assemble the mass and stiffness matrices
-% Initialize the global mass and stiffness matrices
-mass_mat_asb = zeros(MeshParam.num_dof);
-stiff_mat_asb = zeros(MeshParam.num_dof);
-couple_mat_asb = zeros(MeshParam.num_dof,PiezoParam.num_patch);
+% Initialize the sparse global mass and stiffness matrices
+mass_mat_asb = sparse(MeshParam.num_dof,MeshParam.num_dof);
+stiff_mat_asb = sparse(MeshParam.num_dof,MeshParam.num_dof);
+couple_mat_asb = sparse(MeshParam.num_dof,PiezoParam.num_patch);
+
+disp('Assemble the matrices');
 
 for i_ele = 1:MeshParam.num_ele
     
@@ -86,7 +88,9 @@ for i_ele = 1:MeshParam.num_ele
     mass_mat = mass_mat_shim+mass_mat_piezo;
     
     [mass_mat_asb,stiff_mat_asb,couple_mat_asb] = assembMat12DOF(mass_mat_asb, stiff_mat_asb, couple_mat_asb, node_index, piezo_index,...
-        stiff_mat_shim, stiff_mat_piezo, couple_mat, mass_mat);
+        stiff_mat_shim, stiff_mat_piezo, couple_mat, mass_mat, MeshParam.num_dof);
+    
+    disp(['Element ',num2str(i_ele)]);
      
 end
 
@@ -116,22 +120,30 @@ num_dof_mech = size(mass_mat_asb,1);
 num_dof_electr = PiezoParam.num_patch;
 num_states = 2*num_dof_mech+num_dof_electr;
 % Initialize the state coordinates
-state_coord = zeros(num_states, num_time_pts);
+state_coord_old = zeros(num_states,1);
+state_coord_new = zeros(num_states,1);
+
+% Define the record step size
+num_pts_record = 1e2;
+state_coord_record = zeros(num_states,num_pts_record);
 
 % Calculates the inverse matrix of the mass matrix
-inv_mass_mat_asb = mass_mat_asb\eye(size(mass_mat_asb));
+inv_mass_mat_asb = mass_mat_asb\sparse(eye(size(mass_mat_asb)));
 
-for i_time = 1:num_time_pts-1
+for i_time = 1:200%num_time_pts-1
+    
+    fid = floor((i_time-0.1)/num_pts_record);
+    vecid = i_time-fid*num_pts_record;
 
     % Determine the slope k1 at the current time
     t_inst = time_pts(i_time);
-    state_coord_inst = state_coord(:,i_time);
+    state_coord_inst = state_coord_old;
 
     % Define the time-variant capacitance matrix and its inverse
-    capacit_patch_mat = diag(PiezoParam.capacit_patch*ones(1,PiezoParam.num_patch));
-    capacit_shunt_mat = diag(PiezoParam.capacit_shunt*sin(PiezoParam.fre_mod*t_inst+PiezoParam.phase_vec));
+    capacit_patch_mat = sparse(diag(PiezoParam.capacit_patch*ones(1,PiezoParam.num_patch)));
+    capacit_shunt_mat = sparse(diag(PiezoParam.capacit_shunt*sin(PiezoParam.fre_mod*t_inst+PiezoParam.phase_vec)));
     capacit_mat_inst = capacit_patch_mat+capacit_shunt_mat;
-    inv_electr_mat_inst = capacit_mat_inst\eye(size(capacit_mat_inst));
+    inv_electr_mat_inst = capacit_mat_inst\sparse(eye(size(capacit_mat_inst)));
 
     % Define the constraint force as external load
     force_vec = stiff_vec_ex*sin(fre_ex*t_inst);
@@ -141,13 +153,13 @@ for i_time = 1:num_time_pts-1
 
     % Determine the slope k2 at the mid step time
     t_inst = time_pts(i_time)+time_step/2;
-    state_coord_inst = state_coord(:,i_time)+k_1*time_step/2;
+    state_coord_inst = state_coord_old+k_1*time_step/2;
     
     % Define the time-variant capacitance matrix and its inverse
-    capacit_patch_mat = diag(PiezoParam.capacit_patch*ones(1,PiezoParam.num_patch));
-    capacit_shunt_mat = diag(PiezoParam.capacit_shunt*sin(PiezoParam.fre_mod*t_inst+PiezoParam.phase_vec));
+    capacit_patch_mat = sparse(diag(PiezoParam.capacit_patch*ones(1,PiezoParam.num_patch)));
+    capacit_shunt_mat = sparse(diag(PiezoParam.capacit_shunt*sin(PiezoParam.fre_mod*t_inst+PiezoParam.phase_vec)));
     capacit_mat_inst = capacit_patch_mat+capacit_shunt_mat;
-    inv_electr_mat_inst = capacit_mat_inst\eye(size(capacit_mat_inst));
+    inv_electr_mat_inst = capacit_mat_inst\sparse(eye(size(capacit_mat_inst)));
 
     % Define the constraint force as external load
     force_vec = stiff_vec_ex*sin(fre_ex*t_inst);
@@ -157,13 +169,13 @@ for i_time = 1:num_time_pts-1
 
     % Determine the slope k3 at the mid step time
     t_inst = time_pts(i_time)+time_step/2;
-    state_coord_inst = state_coord(:,i_time)+k_2*time_step/2;
+    state_coord_inst = state_coord_old+k_2*time_step/2;
 
     % Define the time-variant capacitance matrix and its inverse
-    capacit_patch_mat = diag(PiezoParam.capacit_patch*ones(1,PiezoParam.num_patch));
-    capacit_shunt_mat = diag(PiezoParam.capacit_shunt*sin(PiezoParam.fre_mod*t_inst+PiezoParam.phase_vec));
+    capacit_patch_mat = sparse(diag(PiezoParam.capacit_patch*ones(1,PiezoParam.num_patch)));
+    capacit_shunt_mat = sparse(diag(PiezoParam.capacit_shunt*sin(PiezoParam.fre_mod*t_inst+PiezoParam.phase_vec)));
     capacit_mat_inst = capacit_patch_mat+capacit_shunt_mat;
-    inv_electr_mat_inst = capacit_mat_inst\eye(size(capacit_mat_inst));
+    inv_electr_mat_inst = capacit_mat_inst\sparse(eye(size(capacit_mat_inst)));
 
     % Define the constraint force as external load
     force_vec = stiff_vec_ex*sin(fre_ex*t_inst);
@@ -173,13 +185,13 @@ for i_time = 1:num_time_pts-1
 
     % Determine the slope k4 at the mid step time
     t_inst = time_pts(i_time+1);
-    state_coord_inst = state_coord(:,i_time)+k_3*time_step;
+    state_coord_inst = state_coord_old+k_3*time_step;
 
     % Define the time-variant capacitance matrix and its inverse
-    capacit_patch_mat = diag(PiezoParam.capacit_patch*ones(1,PiezoParam.num_patch));
-    capacit_shunt_mat = diag(PiezoParam.capacit_shunt*sin(PiezoParam.fre_mod*t_inst+PiezoParam.phase_vec));
+    capacit_patch_mat = sparse(diag(PiezoParam.capacit_patch*ones(1,PiezoParam.num_patch)));
+    capacit_shunt_mat = sparse(diag(PiezoParam.capacit_shunt*sin(PiezoParam.fre_mod*t_inst+PiezoParam.phase_vec)));
     capacit_mat_inst = capacit_patch_mat+capacit_shunt_mat;
-    inv_electr_mat_inst = capacit_mat_inst\eye(size(capacit_mat_inst));
+    inv_electr_mat_inst = capacit_mat_inst\sparse(eye(size(capacit_mat_inst)));
 
     % Define the constraint force as external load
     force_vec = stiff_vec_ex*sin(fre_ex*t_inst);
@@ -188,7 +200,17 @@ for i_time = 1:num_time_pts-1
     k_4 = calRK4Slope(state_coord_inst, inv_mass_mat_asb, stiff_mat_asb, couple_mat_asb, inv_electr_mat_inst, force_vec);
 
     % March to the next step
-    state_coord(:,i_time+1) = state_coord(:,i_time)+time_step/6*(k_1+2*k_2+2*k_3+k_4);
+    state_coord_new = state_coord_old+time_step/6*(k_1+2*k_2+2*k_3+k_4);
+    
+    % Save the state data and update the state vector
+    state_coord_old = state_coord_new;
+    
+    state_coord_record(:,vecid) = state_coord_new;
+    if vecid == num_pts_record
+        fname = ['state_vec_mat_',num2str(fid)];
+        save(fname,'state_coord_record');
+    else
+    end
 
 end
 
