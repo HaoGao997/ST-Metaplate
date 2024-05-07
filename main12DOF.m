@@ -11,8 +11,8 @@
 clear; clc;
 
 % Load the mesh information (element/node numbering and coordinates)
-load('PlateMeshData_20_4.mat');
-load('ElectrodeData_20_4.mat');
+load('BeamMeshData.mat');
+load('BeamElectrodeData.mat');
 
 % Input the parameters of the shim plate
 PlateParam.density = 2700;       % Density [kg/m^3]
@@ -20,8 +20,16 @@ PlateParam.modulus = 69e9;       % Elastic modulus [Pa]
 PlateParam.poisson = 0.33;       % Poisson's ratio
 PlateParam.thickness = 0.002;    % Thickness [m]
 PlateParam.cellsize = 0.05;      % Size [m]
-num_cell_edge = sqrt(electrode(end,1));
-PlateParam.num_cell = num_cell_edge^2;  % Total number of cells
+dim = 1;
+switch dim
+    case 1
+        num_cell_edge = electrode(end,1);
+        PlateParam.num_cell = num_cell_edge;  % Total number of cells
+    case 2
+        num_cell_edge = sqrt(electrode(end,1));
+        PlateParam.num_cell = num_cell_edge^2;  % Total number of cells
+end
+
 PlateParam.length_plate = PlateParam.cellsize*num_cell_edge;
 % Define the elasticity matrix of the shim plate
 PlateParam.elas_mat = PlateParam.modulus/(1-PlateParam.poisson^2)*...
@@ -43,7 +51,10 @@ PiezoParam.elas_mat = PiezoParam.modulus/(1-PiezoParam.poisson^2)*...
     [1, PiezoParam.poisson, 0;
      PiezoParam.poisson, 1, 0;
      0, 0, (1-PiezoParam.poisson)/2];
-PiezoParam.phase_vec = zeros(1,PiezoParam.num_patch);  % TBD!!!!
+% Define the graded phase
+phase_unit = [0,pi*2/3,4*pi/3]; % Phase of a unit
+PiezoParam.phase_vec = repmat(phase_unit, 1, num_cell_edge/3);
+% PiezoParam.phase_vec = zeros(1,PiezoParam.num_patch);  % TBD!!!!
 % Define the modulation shunte circuit
 PiezoParam.fre_mod = 10;        % Modulation frequency [rad/s]
 PiezoParam.capacit_shunt = 5e-5;   % Modulation capacitance [F]
@@ -95,9 +106,11 @@ for i_ele = 1:MeshParam.num_ele
 end
 
 %% Constraint the excited node
-ex_node_index = 136; %(TBD!!!)
+ex_node_index = [362, 603, 844]; %(TBD!!!)
+node_index = 1:MeshParam.num_dof;
+node_index(:,ex_node_index) = [];
 stiff_vec_ex = stiff_mat_asb(:,ex_node_index);
-stiff_vec_ex(ex_node_index) = [];
+stiff_vec_ex = stiff_vec_ex(node_index,:);
 % Removed the excitaed node from mass and stiffness matrices
 mass_mat_asb(ex_node_index,:) =[];
 mass_mat_asb(:,ex_node_index) =[];
@@ -130,7 +143,7 @@ state_coord_record = zeros(num_states,num_pts_record);
 % Calculates the inverse matrix of the mass matrix
 inv_mass_mat_asb = mass_mat_asb\sparse(eye(size(mass_mat_asb)));
 
-for i_time = 1:200%num_time_pts-1
+for i_time = 1:num_time_pts-1
     
     fid = floor((i_time-0.1)/num_pts_record);
     vecid = i_time-fid*num_pts_record;
@@ -146,7 +159,7 @@ for i_time = 1:200%num_time_pts-1
     inv_electr_mat_inst = capacit_mat_inst\sparse(eye(size(capacit_mat_inst)));
 
     % Define the constraint force as external load
-    force_vec = stiff_vec_ex*sin(fre_ex*t_inst);
+    force_vec = stiff_vec_ex*[1;1;1]*sin(fre_ex*t_inst);
 
     % Find the slope at the given time
     k_1 = calRK4Slope(state_coord_inst, inv_mass_mat_asb, stiff_mat_asb, couple_mat_asb, inv_electr_mat_inst, force_vec);
@@ -162,7 +175,7 @@ for i_time = 1:200%num_time_pts-1
     inv_electr_mat_inst = capacit_mat_inst\sparse(eye(size(capacit_mat_inst)));
 
     % Define the constraint force as external load
-    force_vec = stiff_vec_ex*sin(fre_ex*t_inst);
+    force_vec = stiff_vec_ex*[1;1;1]*sin(fre_ex*t_inst);
 
     % Find the slope at the given time
     k_2 = calRK4Slope(state_coord_inst, inv_mass_mat_asb, stiff_mat_asb, couple_mat_asb, inv_electr_mat_inst, force_vec);
@@ -178,7 +191,7 @@ for i_time = 1:200%num_time_pts-1
     inv_electr_mat_inst = capacit_mat_inst\sparse(eye(size(capacit_mat_inst)));
 
     % Define the constraint force as external load
-    force_vec = stiff_vec_ex*sin(fre_ex*t_inst);
+    force_vec = stiff_vec_ex*[1;1;1]*sin(fre_ex*t_inst);
 
     % Find the slope at the given time
     k_3 = calRK4Slope(state_coord_inst, inv_mass_mat_asb, stiff_mat_asb, couple_mat_asb, inv_electr_mat_inst, force_vec);
@@ -194,7 +207,7 @@ for i_time = 1:200%num_time_pts-1
     inv_electr_mat_inst = capacit_mat_inst\sparse(eye(size(capacit_mat_inst)));
 
     % Define the constraint force as external load
-    force_vec = stiff_vec_ex*sin(fre_ex*t_inst);
+    force_vec = stiff_vec_ex*[1;1;1]*sin(fre_ex*t_inst);
 
     % Find the slope at the given time
     k_4 = calRK4Slope(state_coord_inst, inv_mass_mat_asb, stiff_mat_asb, couple_mat_asb, inv_electr_mat_inst, force_vec);
