@@ -15,6 +15,8 @@ switch opt_dof
         node_dof = 1;
     case 2
         node_dof = 3;
+    case 3
+        node_dof = 4;
 end
 num_node_ele = size(element,2)-1;
 num_electrode = size(electrode,1);

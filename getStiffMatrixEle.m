@@ -48,6 +48,8 @@ for intx = 1:length(gauss_pts_x)
                 [~, ddNddr, ddNdds, ddNdrds] = getShapeFcns(r_coor, s_coor);
             case 3
                 [~, ddNddr, ddNdds, ddNdrds] = getShapeFcns12DOF(r_coor, s_coor, ele_size);
+            case 4
+                [~, ddNddr, ddNdds, ddNdrds] = getShapeFcns16DOF(r_coor, s_coor, ele_size);
         end
         
         % Define the shape function matrix

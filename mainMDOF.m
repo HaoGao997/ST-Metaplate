@@ -1,18 +1,24 @@
 % Transient wave propagation analysis of a spatiotemporally modulated
 % piezoelectric shunt meta-plate.
 % 
-% The 4 node 12 dof quadrilaterial element is used in the formulation.
+% The 4 node 16 dof quadrilaterial element is used in the formulation.
 %
 % -------------------------------------------------------------------------
 % Created by Hao Gao (SJTU)
 % Create on Mar 13, 2024
-% Modified on Mar 13, 2024
+% Modified on Jun 04, 2024
 % -------------------------------------------------------------------------
-clear; clc;
+% clear; clc;
 
 % Load the mesh information (element/node numbering and coordinates)
-load('BeamMeshData.mat');
-load('BeamElectrodeData.mat');
+% load('BeamMeshData.mat');
+% load('BeamElectrodeData.mat');
+load('.\Data\PlateMeshData.mat');
+load('.\Data\ElectrodeData.mat');
+% load NodeElement_SL.dat;
+% load Coordinates_SL.dat;
+
+% node = Coordinates_SL; element = NodeElement_SL;
 
 % Input the parameters of the shim plate
 PlateParam.density = 2700;       % Density [kg/m^3]
@@ -20,7 +26,7 @@ PlateParam.modulus = 69e9;       % Elastic modulus [Pa]
 PlateParam.poisson = 0.33;       % Poisson's ratio
 PlateParam.thickness = 0.002;    % Thickness [m]
 PlateParam.cellsize = 0.05;      % Size [m]
-dim = 1;
+dim = 2;
 switch dim
     case 1
         num_cell_edge = electrode(end,1);
@@ -39,11 +45,11 @@ PlateParam.elas_mat = PlateParam.modulus/(1-PlateParam.poisson^2)*...
 
 % Input the parameters of the piezoelectric layer
 PiezoParam.density = 7500;       % Density [kg/m^3]
-PiezoParam.modulus = 126e9;      % Elastic modulus [Pa]
-PiezoParam.poisson = 0.3;        % Poisson's ratio
-PiezoParam.permitv = 17.3e-9;    % Permittivity [F/m]
-PiezoParam.piezo_strain = -23.4; % Piezoelectric strain constant [C/m^2]
-PiezoParam.thickness = 0.0005;   % Thickness [m]
+PiezoParam.modulus = 62e9;      % Elastic modulus [Pa]
+PiezoParam.poisson = 0.33;        % Poisson's ratio
+PiezoParam.permitv = 15.94e-9;    % Permittivity [F/m]
+PiezoParam.piezo_strain = -23.38; % Piezoelectric strain constant [C/m^2]
+PiezoParam.thickness = 0.001;   % Thickness [m]
 PiezoParam.num_patch = PlateParam.num_cell;
 PiezoParam.capacit_patch = 2*PiezoParam.permitv/PiezoParam.thickness;
 % Define the elasticity matrix of the piezoelectric layer
@@ -53,14 +59,14 @@ PiezoParam.elas_mat = PiezoParam.modulus/(1-PiezoParam.poisson^2)*...
      0, 0, (1-PiezoParam.poisson)/2];
 % Define the graded phase
 phase_unit = [0,pi*2/3,4*pi/3]; % Phase of a unit
-PiezoParam.phase_vec = repmat(phase_unit, 1, num_cell_edge/3);
+% PiezoParam.phase_vec = repmat(phase_unit, 1, num_cell_edge/3);
 % PiezoParam.phase_vec = zeros(1,PiezoParam.num_patch);  % TBD!!!!
 % Define the modulation shunte circuit
 PiezoParam.fre_mod = 10;        % Modulation frequency [rad/s]
 PiezoParam.capacit_shunt = 5e-5;   % Modulation capacitance [F]
 
 % Define the mesh parameters
-MeshParam = getEleNodeRel(node, element, electrode, PlateParam.cellsize, 2);
+MeshParam = getEleNodeRel(node, element, electrode, PlateParam.cellsize, 3);
 MeshParam.elesize = MeshParam.element(1,6);
 
 %% Loop on the element assemble the mass and stiffness matrices
@@ -78,7 +84,7 @@ for i_ele = 1:MeshParam.num_ele
     bend_mat_shim = PlateParam.thickness^3/12*PlateParam.elas_mat;
     bend_mat_piezo = 2*(4*PiezoParam.thickness^2+...
         6*PlateParam.thickness*PiezoParam.thickness+...
-        3*PlateParam.thickness^2)*PiezoParam.thickness/12*PiezoParam.elas_mat; % set zero tentatively!
+        3*PlateParam.thickness^2)*PiezoParam.thickness/12*PiezoParam.elas_mat*0; % set zero tentatively!
     
     mass_area_shim = PlateParam.thickness*PlateParam.density;
     mass_area_piezo = 2*PiezoParam.thickness*PiezoParam.density; % set zero tentatively!
@@ -96,9 +102,9 @@ for i_ele = 1:MeshParam.num_ele
     
     mass_mat_shim = getMassMatrixEle(MeshParam.ele_dof, MeshParam.node_dof,  MeshParam.elesize, mass_area_shim, node_index, MeshParam.node);
     mass_mat_piezo = getMassMatrixEle(MeshParam.ele_dof, MeshParam.node_dof,  MeshParam.elesize, mass_area_piezo, node_index, MeshParam.node);
-    mass_mat = mass_mat_shim+mass_mat_piezo;
+    mass_mat = mass_mat_shim+mass_mat_piezo*0;
     
-    [mass_mat_asb,stiff_mat_asb,couple_mat_asb] = assembMat12DOF(mass_mat_asb, stiff_mat_asb, couple_mat_asb, node_index, piezo_index,...
+    [mass_mat_asb,stiff_mat_asb,couple_mat_asb] = assembMat16DOF(mass_mat_asb, stiff_mat_asb, couple_mat_asb, node_index, piezo_index,...
         stiff_mat_shim, stiff_mat_piezo, couple_mat, mass_mat, MeshParam.num_dof);
     
     disp(['Element ',num2str(i_ele)]);

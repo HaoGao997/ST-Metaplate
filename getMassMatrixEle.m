@@ -34,6 +34,8 @@ for intx = 1:length(gauss_pts_x)
                 [N, ~, ~, ~] = getShapeFcns(r_coor, s_coor);
             case 3
                 [N, ~, ~, ~] = getShapeFcns12DOF(r_coor, s_coor, ele_size);
+            case 4
+                [N, ~, ~, ~] = getShapeFcns16DOF(r_coor, s_coor, ele_size);
         end
                 
         % Get the coordinate transformation matrix

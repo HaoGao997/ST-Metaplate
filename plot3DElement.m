@@ -5,7 +5,7 @@
 %%
 figure; hold all;
 
-id = 7;
+id = 5;
 
 for i_ele = 1:MeshParam.num_ele
     
