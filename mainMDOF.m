@@ -17,6 +17,7 @@ load('.\Data\PlateMeshData.mat');
 load('.\Data\ElectrodeData.mat');
 % load NodeElement_SL.dat;
 % load Coordinates_SL.dat;
+% load('.\Data\PlateMeshData_1_100.mat');
 
 % node = Coordinates_SL; element = NodeElement_SL;
 
@@ -51,7 +52,8 @@ PiezoParam.permitv = 15.94e-9;    % Permittivity [F/m]
 PiezoParam.piezo_strain = -23.38; % Piezoelectric strain constant [C/m^2]
 PiezoParam.thickness = 0.001;   % Thickness [m]
 PiezoParam.num_patch = PlateParam.num_cell;
-PiezoParam.capacit_patch = 2*PiezoParam.permitv/PiezoParam.thickness;
+PiezoParam.area_patch = PlateParam.cellsize^2;
+PiezoParam.capacit_patch = 2*PiezoParam.permitv/PiezoParam.thickness*PiezoParam.area_patch;
 % Define the elasticity matrix of the piezoelectric layer
 PiezoParam.elas_mat = PiezoParam.modulus/(1-PiezoParam.poisson^2)*...
     [1, PiezoParam.poisson, 0;
@@ -84,10 +86,10 @@ for i_ele = 1:MeshParam.num_ele
     bend_mat_shim = PlateParam.thickness^3/12*PlateParam.elas_mat;
     bend_mat_piezo = 2*(4*PiezoParam.thickness^2+...
         6*PlateParam.thickness*PiezoParam.thickness+...
-        3*PlateParam.thickness^2)*PiezoParam.thickness/12*PiezoParam.elas_mat*0; % set zero tentatively!
+        3*PlateParam.thickness^2)*PiezoParam.thickness/12*PiezoParam.elas_mat;
     
     mass_area_shim = PlateParam.thickness*PlateParam.density;
-    mass_area_piezo = 2*PiezoParam.thickness*PiezoParam.density; % set zero tentatively!
+    mass_area_piezo = 2*PiezoParam.thickness*PiezoParam.density;
 
     couple_param_mat = [PiezoParam.piezo_strain;PiezoParam.piezo_strain;0];
     
@@ -102,7 +104,12 @@ for i_ele = 1:MeshParam.num_ele
     
     mass_mat_shim = getMassMatrixEle(MeshParam.ele_dof, MeshParam.node_dof,  MeshParam.elesize, mass_area_shim, node_index, MeshParam.node);
     mass_mat_piezo = getMassMatrixEle(MeshParam.ele_dof, MeshParam.node_dof,  MeshParam.elesize, mass_area_piezo, node_index, MeshParam.node);
-    mass_mat = mass_mat_shim+mass_mat_piezo*0;
+    mass_mat = mass_mat_shim+mass_mat_piezo;
+    
+    % Remove the asymmetry due to the floating errors 
+    stiff_mat_shim = (stiff_mat_shim+transpose(stiff_mat_shim))/2;
+    stiff_mat_piezo = (stiff_mat_piezo+transpose(stiff_mat_piezo))/2;
+    mass_mat = (mass_mat+transpose(mass_mat))/2;
     
     [mass_mat_asb,stiff_mat_asb,couple_mat_asb] = assembMat16DOF(mass_mat_asb, stiff_mat_asb, couple_mat_asb, node_index, piezo_index,...
         stiff_mat_shim, stiff_mat_piezo, couple_mat, mass_mat, MeshParam.num_dof);

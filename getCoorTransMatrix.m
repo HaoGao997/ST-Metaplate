@@ -31,22 +31,22 @@ for i_node = 1:num_node
     dyds = dyds+dNds(i_node)*node_coord(node_index(i_node),3);    
 end
 
-if abs(dxdr) < 1e-10
+if abs(dxdr) < 1e-15
     drdx = 0;
 else
     drdx = 1/dxdr;
 end
-if abs(dxds) < 1e-10
+if abs(dxds) < 1e-15
     dsdx = 0;
 else
     dsdx = 1/dxds;
 end
-if abs(dydr) < 1e-10
+if abs(dydr) < 1e-15
     drdy = 0;
 else
     drdy = 1/dydr;
 end
-if abs(dyds) < 1e-10
+if abs(dyds) < 1e-15
     dsdy = 0;
 else
     dsdy = 1/dyds;
